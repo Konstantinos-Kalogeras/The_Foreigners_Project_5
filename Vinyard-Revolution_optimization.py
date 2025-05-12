@@ -113,32 +113,47 @@ wf1_model = Bastankhah_PorteAgel_2014(
 
 wt_x1, wt_y1 = xinit1,yinit1    # Vinyard turbine placement
 
-wt_x2, wt_y2 = xinit2, yinit2   # Revolution rubine placement
+wt_x2, wt_y2 = xinit2, yinit2   # Revolution rubine placementpl
+
+import matplotlib.pyplot as plt
+
+# plt.figure()
+# plt.scatter(wt_x1,wt_y1, c='red')
+# plt.scatter(wt_x2,wt_y2, c='blue')
+
+# plt.show()
+
 
 X_full = np.concatenate([wt_x1, wt_x2])
 Y_full = np.concatenate([wt_y1, wt_y2])
+
+
+# plt.figure()
+# plt.scatter(X_full,Y_full, c='black')
+
+# plt.show()
 
 n_wt = len(X_full)
 print(f"Initial layout has {n_wt} wind turbines")
 
 # plot initial layout
-# plt.figure()
-# plt.plot(X_full, Y_full, "x", c="magenta")
-# # put indeces on the wind turbines
-# for i in range(n_wt):
-#     plt.text(X_full[i] + 10, Y_full[i], str(i + 1), fontsize=12)
-# plt.axis("equal")
-# plt.show()
+plt.figure()
+plt.plot(X_full, Y_full, "x", c="magenta")
+# put indeces on the wind turbines
+for i in range(n_wt):
+    plt.text(X_full[i] + 10, Y_full[i], str(i + 1), fontsize=12)
+plt.axis("equal")
+plt.show()
 
 
-# n_wt_sf = n_wt - 12                 # n_wt is the amount of turbines included in this figure there are 76 total turbines 0-63 are vinyards we need to isolate them to mask them so 67-12 = 63
-# wf1_mask = np.zeros(n_wt, dtype=bool)
-# wf1_mask[:n_wt_sf] = True
-# wf2_mask = ~(wf1_mask)  # the rest of turbines
+n_wt_sf = n_wt - 63                 # n_wt is the amount of turbines included in this figure there are 76 total turbines 0-63 are vinyards we need to isolate them to mask them so 67-12 = 63
+wf1_mask = np.zeros(n_wt, dtype=bool)
+wf1_mask[:n_wt_sf] = True
+wf2_mask = ~(wf1_mask)  # the rest of turbines
 
 
-# print(f"Turbines belonging to wind farm 1: {np.where(wf1_mask)[0]}") # verifiing that our calulations were correct 
-# print(f"Turbines belonging to wind farm 2: {np.where(wf2_mask)[0]}")
+print(f"Turbines belonging to wind farm 1: {np.where(wf1_mask)[0]}") # verifiing that our calulations were correct 
+print(f"Turbines belonging to wind farm 2: {np.where(wf2_mask)[0]}")
 
 boundary = boundary1            # boundary vinyard
 
@@ -155,7 +170,7 @@ def daep_func(x,y):
     return daep
 print('done')
 
-wt_groups = [np.arange(n_wt-12), np.arange(n_wt-12, n_wt)]
+wt_groups = [np.arange(n_wt-63), np.arange(n_wt-63, n_wt)]
 
 # defining boundarys 
 boundtype=BoundaryType.POLYGON
@@ -194,14 +209,14 @@ wd = 270 # we only care about this direction bec this direction is the only way 
 
 # c_comp = len(constraint_comp)
 
-# fig = plt.figure()
-# ax1 = fig.add_subplot(111)
-# plt.plot(X_full, Y_full, "x", c="magenta")
-# for i in range(n_wt):
-#     plt.text(X_full[i] + 10, Y_full[i], str(i + 1), fontsize=12)
-# plt.axis("equal")
-# constraint_comp.get_comp(n_wt).plot(ax1)
-# plt.show()
+fig = plt.figure()
+ax1 = fig.add_subplot(111)
+plt.plot(X_full, Y_full, "x", c="magenta")
+for i in range(n_wt):
+    plt.text(X_full[i] + 10, Y_full[i], str(i + 1), fontsize=12)
+plt.axis("equal")
+constraint_comp.get_comp(n_wt).plot(ax1)
+plt.show()
 
 print('done')
 
@@ -232,6 +247,7 @@ def callback(ax):
 min_spacing = wt_vinyard.diameter() * 2
 
 problem = TopFarmProblem(design_vars= {'x': X_full, 'y': Y_full},
+# problem = TopFarmProblem(design_vars= {'x': X_full[10:], 'y': Y_full[10:]},
                          constraints=([constraint_comp,
                                       SpacingConstraint(min_spacing=min_spacing)]),
                         cost_comp=slsqp_cost_comp,
