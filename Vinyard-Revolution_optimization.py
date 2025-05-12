@@ -38,7 +38,7 @@ with open(r'E:\Spring 2025\ENGIN 480\Project_5\The_Foreigners_Project_5\Revoluti
     xinit2,yinit2 = np.array(pickle.load(g))
 
 maxiter = 1000
-tol = 1e-12
+tol = 1e-6
 
 class SG_11200(GenericWindTurbine):
     def __init__(self):
@@ -76,7 +76,7 @@ class Haliade_X(GenericWindTurbine):
                                     power_norm=13000, turbulence_intensity=0.07)
 
 class VinyardWind2(UniformWeibullSite):
-    def __init__(self, ti=0.07, shear=PowerShear(h_ref=150, alpha=0.1)):
+    def __init__(self, ti=0.07, shear=PowerShear(h_ref=150, alpha=0.1), wd = 270):
         f =[6.4452, 7.6731, 6.4753, 6.0399, 4.8786, 
              4.5063, 7.318, 11.7828, 13.0872, 11.1976,
             11.1351, 9.461]
@@ -89,12 +89,12 @@ class VinyardWind2(UniformWeibullSite):
         # self.initial_position = np.array([site.x, site.y]).T
         self.name = 'Vinyard Wind Farm'
         
-wt_revolution = SG_11200()
+# wt_revolution = SG_11200()
 
 wt_vinyard = Haliade_X()
 
 
-site_2 = RevolutionWindData()
+# site_2 = RevolutionWindData()
 
 site_1 = VinyardWind2()
 
@@ -104,10 +104,10 @@ wf1_model = Bastankhah_PorteAgel_2014(
     k=0.0324555,  # default value from BastankhahGaussianDeficit
 )
 
-wf2_model = Bastankhah_PorteAgel_2014(
-    site_2,
-    wt_revolution,
-    k = 0.0324555)
+# wf2_model = Bastankhah_PorteAgel_2014(
+#     site_2,
+#     wt_revolution,
+#     k = 0.0324555)
 
 # Initial positions
 
@@ -131,41 +131,66 @@ print(f"Initial layout has {n_wt} wind turbines")
 # plt.show()
 
 
-n_wt_sf = n_wt - 12                 # n_wt is the amount of turbines included in this figure there are 76 total turbines 0-63 are vinyards we need to isolate them to mask them so 67-12 = 63
-wf1_mask = np.zeros(n_wt, dtype=bool)
-wf1_mask[:n_wt_sf] = True
-wf2_mask = ~(wf1_mask)  # the rest of turbines
+# n_wt_sf = n_wt - 12                 # n_wt is the amount of turbines included in this figure there are 76 total turbines 0-63 are vinyards we need to isolate them to mask them so 67-12 = 63
+# wf1_mask = np.zeros(n_wt, dtype=bool)
+# wf1_mask[:n_wt_sf] = True
+# wf2_mask = ~(wf1_mask)  # the rest of turbines
 
 
-print(f"Turbines belonging to wind farm 1: {np.where(wf1_mask)[0]}") # verifiing that our calulations were correct 
-print(f"Turbines belonging to wind farm 2: {np.where(wf2_mask)[0]}")
+# print(f"Turbines belonging to wind farm 1: {np.where(wf1_mask)[0]}") # verifiing that our calulations were correct 
+# print(f"Turbines belonging to wind farm 2: {np.where(wf2_mask)[0]}")
 
 boundary = boundary1            # boundary vinyard
 
 boundary_2 = boundary2
 
 def aep_func(x,y):
-    aep = wf1_model(x,y).aep().sum() + wf2_model(x,y).aep().sum()
+    aep = wf1_model(x,y).aep().sum() # + wf2_model(x,y).aep().sum()
     return aep
 
 def daep_func(x,y):
     daep = wf1_model.aep_gradients(gradient_method=autograd, wrt_arg=['x','y'], x=x,
-                                y=y) + wf2_model.aep_gradients(gradient_method=autograd, wrt_arg=['x','y'], x=x,
-                                y=y)
+                                y=y)# + wf2_model.aep_gradients(gradient_method=autograd, wrt_arg=['x','y'], x=x,
+                                # y=y)
     return daep
 print('done')
 
 wt_groups = [np.arange(n_wt-12), np.arange(n_wt-12, n_wt)]
 
+# defining boundarys 
 boundtype=BoundaryType.POLYGON
 
 constraint_comp  = MultiWFBoundaryConstraint(geometry=[boundary1,
                                                        boundary2], 
                                             wt_groups = wt_groups,
                                             boundtype = boundtype)
+
+wd = 270 # we only care about this direction bec this direction is the only way that costal will impact vinyard
+# similarly when we do the vise versa of this challenge what effect dose vinyard have on costal the wd that will intrest us will be 90 degrees
                                             
+# np.random.seed(42)
+# # Wind Resouces
+# # full_wd = np.arange(0, 360, 1)  # wind directions
+# full_ws = np.arange(3, 25, 1)  # wind speeds
+# freqs = site_1.local_wind(  # sector frequencies
+#     X_full,
+#     Y_full,
+#     wd=wd,
+#     ws=full_ws,
+#     h = 150,
+# ).Sector_frequency_ilk[0, :, 0]
+# # weibull parameters
+# A = site_1.local_wind(X_full, Y_full, wd=wd, ws=full_ws, h = 150).Weibull_A_ilk[0, :, 0]
+# k = site_1.local_wind(X_full, Y_full, wd=wd, ws=full_ws, h = 150).Weibull_k_ilk[0, :, 0]
+# N_SAMPLES = 25  # play with the number of samples
 
-
+# print('done')
+# sample wind resources
+# def wind_resource_sample():
+#     idx = np.random.choice(np.arange(wd.size), N_SAMPLES, p=freqs / freqs.sum())
+#     wd = wd
+#     ws = A[idx] * np.random.weibull(k[idx])
+#     return wd, ws
 
 # c_comp = len(constraint_comp)
 
@@ -182,35 +207,38 @@ print('done')
 
 # boundary_closed_2 = np.vstack([boundary_2, boundary_2[0]])
 # AEP Cost Model Component - SLSQP
+slsqp_cost_comp = PyWakeAEPCostModelComponent(
+    windFarmModel=wf1_model, n_wt=n_wt, grad_method=autograd
+)
+
+# slsqp_cost_comp = CostModelComponent(input_keys=['x', 'y'],
+#                                           n_wt = n_wt,
+#                                           cost_function = aep_func,
+#                                           cost_gradient_function=daep_func,
+#                                           objective=True,
+#                                           maximize=True,
+#                                           output_keys=[('AEP', 0)]
+#                                           )
+
 # slsqp_cost_comp = PyWakeAEPCostModelComponent(
-#     windFarmModel=wf_model, n_wt=n_wt, grad_method=autograd
-# )
-
-cost_comp = CostModelComponent(input_keys=['x', 'y'],
-                                          n_wt = n_wt,
-                                          cost_function = aep_func,
-                                          cost_gradient_function=daep_func,
-                                          objective=True,
-                                          maximize=True,
-                                          output_keys=[('AEP', 0)]
-                                          )
-
-
+#     windFarmModel=wf1_model, n_wt=n_wt, grad_method=autograd)
 
 # cost_comp = PyWakeAEPCostModelComponent(windFarmModel=wf_model,
 #                                          n_wt=n_wt,
 #                                          grad_method=autograd)
+def callback(ax):
+    ax.set_xlim(-200, 1200)
 
 min_spacing = wt_vinyard.diameter() * 2
 
 problem = TopFarmProblem(design_vars= {'x': X_full, 'y': Y_full},
-                         constraints=[constraint_comp,
-                                      SpacingConstraint(min_spacing=min_spacing)],
-                        cost_comp=cost_comp,
+                         constraints=([constraint_comp,
+                                      SpacingConstraint(min_spacing=min_spacing)]),
+                        cost_comp=slsqp_cost_comp,
                         driver=EasyScipyOptimizeDriver(optimizer='SLSQP', maxiter=maxiter, tol=tol),
                         n_wt=n_wt,
                         expected_cost=0.001,
-                        plot_comp=XYPlotComp()
+                        plot_comp=XYPlotComp(callback=callback)
                         )
 
 
