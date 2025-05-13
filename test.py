@@ -174,7 +174,7 @@ def wind_resource_sample():
 
 # aep function - SGD
 def aep_func(x, y, full=False, **kwargs):
-    wd, ws = wind_resource_sample() if not full else (full_wd, full_ws)
+    wd, ws = wind_resource_sample()
     aep_sgd = wf_model(x, y, wd=wd, ws=ws, time=not full).aep().sum().values * 1e6
     return aep_sgd
 
