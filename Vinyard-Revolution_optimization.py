@@ -89,7 +89,7 @@ class VinyardWind2(UniformWeibullSite):
         # self.initial_position = np.array([site.x, site.y]).T
         self.name = 'Vinyard Wind Farm'
         
-# wt_revolution = SG_11200()
+wt_revolution = SG_11200()
 
 wt_vinyard = Haliade_X()
 
@@ -110,12 +110,20 @@ wf1_model = Bastankhah_PorteAgel_2014(
 #     k = 0.0324555)
 
 # Initial positions
+# grid_size = len(xinit1) +len(xinit2)
+wt_x1, wt_y1 = xinit1, yinit1
 
-wt_x1, wt_y1 = xinit1,yinit1    # Vinyard turbine placement
+# wt_x1 = np.append(xinit1)
+# wt_y1 = np .append(yinit1)
 
-wt_x2, wt_y2 = xinit2, yinit2   # Revolution rubine placementpl
+wt_x2, wt_y2 = xinit2, yinit2
 
-import matplotlib.pyplot as plt
+# wt_x2 = np.append(xinit2)
+# wt_y2 = np.append(yinit2)
+
+
+
+# import matplotlib.pyplot as plt
 
 # plt.figure()
 # plt.scatter(wt_x1,wt_y1, c='red')
@@ -145,6 +153,7 @@ for i in range(n_wt):
 plt.axis("equal")
 plt.show()
 
+print('done')
 
 n_wt_sf = n_wt - 63                 # n_wt is the amount of turbines included in this figure there are 76 total turbines 0-63 are vinyards we need to isolate them to mask them so 67-12 = 63
 wf1_mask = np.zeros(n_wt, dtype=bool)
@@ -155,9 +164,45 @@ wf2_mask = ~(wf1_mask)  # the rest of turbines
 print(f"Turbines belonging to wind farm 1: {np.where(wf1_mask)[0]}") # verifiing that our calulations were correct 
 print(f"Turbines belonging to wind farm 2: {np.where(wf2_mask)[0]}")
 
-boundary = boundary1            # boundary vinyard
+# boundary = BoundaryType.POLYGON       # boundary vinyard
 
-boundary_2 = boundary2
+# boundary_2 = BoundaryType.POLYGON
+wt_groups = [np.arange(n_wt-63), np.arange(n_wt-63, n_wt)]
+
+constr_type = BoundaryType.POLYGON
+constraint_comp = MultiWFBoundaryConstraint(geometry = [boundary1, boundary2], wt_groups=wt_groups,
+        boundtype=constr_type)
+
+# let's see how the boundaries look like
+fig = plt.figure()
+ax1 = fig.add_subplot(111)
+plt.plot(X_full, Y_full, "x", c="magenta")
+for i in range(n_wt):
+    plt.text(X_full[i] + 10, Y_full[i], str(i + 1), fontsize=12)
+plt.axis("equal")
+constraint_comp.get_comp(n_wt).plot(ax1)
+plt.show()
+
+print('done')
+
+
+full_ws = np.arange(3, 25, 1) 
+wd = 270 ################# need to change to 90 or 270
+freqs = site_1.local_wind(  # sector frequencies
+    X_full,
+    Y_full,
+    wd=wd,
+    ws=full_ws,
+).Sector_frequency_ilk[0, :, 0]
+# weibull parameters
+As = site_1.local_wind(X_full, Y_full, wd=270, ws=full_ws, h =150).Weibull_A_ilk[0, :, 0]
+ks = site_1.local_wind(X_full, Y_full, wd=270, ws=full_ws, h = 150).Weibull_k_ilk[0, :, 0]
+N_SAMPLES = 25  # play with the number of samples
+
+def wind_resource_sample():
+    wd = full_wd[idx]
+    ws = As[idx] * np.random.weibull(ks[idx])
+    return wd, ws
 
 def aep_func(x,y):
     aep = wf1_model(x,y).aep().sum() # + wf2_model(x,y).aep().sum()
@@ -170,10 +215,10 @@ def daep_func(x,y):
     return daep
 print('done')
 
-wt_groups = [np.arange(n_wt-63), np.arange(n_wt-63, n_wt)]
+# wt_groups = [np.arange(n_wt-63), np.arange(n_wt-63, n_wt)]
 
 # defining boundarys 
-boundtype=BoundaryType.POLYGON
+# boundtype=BoundaryType.POLYGON
 
 constraint_comp  = MultiWFBoundaryConstraint(geometry=[boundary1,
                                                        boundary2], 
@@ -209,16 +254,16 @@ wd = 270 # we only care about this direction bec this direction is the only way 
 
 # c_comp = len(constraint_comp)
 
-fig = plt.figure()
-ax1 = fig.add_subplot(111)
-plt.plot(X_full, Y_full, "x", c="magenta")
-for i in range(n_wt):
-    plt.text(X_full[i] + 10, Y_full[i], str(i + 1), fontsize=12)
-plt.axis("equal")
-constraint_comp.get_comp(n_wt).plot(ax1)
-plt.show()
+# fig = plt.figure()
+# ax1 = fig.add_subplot(111)
+# plt.plot(X_full, Y_full, "x", c="magenta")
+# for i in range(n_wt):
+#     plt.text(X_full[i] + 10, Y_full[i], str(i + 1), fontsize=12)
+# plt.axis("equal")
+# constraint_comp.get_comp(n_wt).plot(ax1)
+# plt.show()
 
-print('done')
+# print('done')
 
 # boundary_closed_2 = np.vstack([boundary_2, boundary_2[0]])
 # AEP Cost Model Component - SLSQP
@@ -244,10 +289,12 @@ slsqp_cost_comp = PyWakeAEPCostModelComponent(
 def callback(ax):
     ax.set_xlim(-200, 1200)
 
+# v = X_full[10:]
+
 min_spacing = wt_vinyard.diameter() * 2
 
 problem = TopFarmProblem(design_vars= {'x': X_full, 'y': Y_full},
-# problem = TopFarmProblem(design_vars= {'x': X_full[10:], 'y': Y_full[10:]},
+# problem = TopFarmProblem(design_vars= {'x': X_full[75:], 'y': Y_full[75:]},
                          constraints=([constraint_comp,
                                       SpacingConstraint(min_spacing=min_spacing)]),
                         cost_comp=slsqp_cost_comp,
