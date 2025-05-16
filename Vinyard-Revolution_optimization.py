@@ -25,6 +25,7 @@ import pickle
 from topfarm.cost_models.cost_model_wrappers import CostModelComponent
 from topfarm.constraint_components.boundary import XYBoundaryConstraint
 
+# Extracting coordinatates of wind terbines and boundarys
 with open(r'E:\Spring 2025\ENGIN 480\Project_5\The_Foreigners_Project_5\Vinyard_utm_boundary.pkl', 'rb') as f:
     boundary1 = np.array(pickle.load(f))
 
@@ -40,6 +41,8 @@ with open(r'E:\Spring 2025\ENGIN 480\Project_5\The_Foreigners_Project_5\Revoluti
 maxiter = 1000
 tol = 1e-6
 
+
+# Classes for type of wind terbines and wind data
 class SG_11200(GenericWindTurbine):
     def __init__(self):
         """
@@ -76,7 +79,7 @@ class Haliade_X(GenericWindTurbine):
                                     power_norm=13000, turbulence_intensity=0.07)
 
 class VinyardWind2(UniformWeibullSite):
-    def __init__(self, ti=0.07, shear=PowerShear(h_ref=150, alpha=0.1), wd = 270):
+    def __init__(self, ti=0.07, shear=PowerShear(h_ref=150, alpha=0.1)):
         f =[6.4452, 7.6731, 6.4753, 6.0399, 4.8786, 
              4.5063, 7.318, 11.7828, 13.0872, 11.1976,
             11.1351, 9.461]
@@ -89,6 +92,8 @@ class VinyardWind2(UniformWeibullSite):
         # self.initial_position = np.array([site.x, site.y]).T
         self.name = 'Vinyard Wind Farm'
         
+
+# Calling and redifining the wind terbines and wind data
 wt_revolution = SG_11200()
 
 wt_vinyard = Haliade_X()
@@ -98,94 +103,112 @@ site_2 = RevolutionWindData()
 
 site_1 = VinyardWind2()
 
+
+# calling the type fo model that we will be using for the 2 sites
 wf1_model = Bastankhah_PorteAgel_2014(
     site_1,
     wt_vinyard,
     k=0.0324555,  # default value from BastankhahGaussianDeficit
 )
 
+# defining the wind terbine locations of Virginia
 wt_x1, wt_y1 = xinit1, yinit1
 
-
+# defining the wind terbine locations of Costal
 wt_x2, wt_y2 = xinit2, yinit2
 
+# Collecting the wind terbine locations into one list using numpy
 X_full = np.concatenate([wt_x1, wt_x2])
 Y_full = np.concatenate([wt_y1, wt_y2])
 
-
+# Amount of wind terbines and print the number 
 n_wt = len(X_full)
 print(f"Initial layout has {n_wt} wind turbines")
 
 # plot initial layout
-plt.figure()
-plt.plot(X_full, Y_full, "x", c="magenta")
-# put indeces on the wind turbines
-for i in range(n_wt):
-    plt.text(X_full[i] + 10, Y_full[i], str(i + 1), fontsize=12)
-plt.axis("equal")
-plt.show()
+# plt.figure()
+# plt.plot(X_full, Y_full, "x", c="magenta")
+# # put indeces on the wind turbines
+# for i in range(n_wt):
+#     plt.text(X_full[i] + 10, Y_full[i], str(i + 1), fontsize=12)
+# plt.axis("equal")
+# plt.show()
 
 print('done')
 
-n_wt_sf = n_wt - 63                 # n_wt is the amount of turbines included in this figure there are 76 total turbines 0-63 are vinyards we need to isolate them to mask them so 67-12 = 63
+# masking Vinyard wind
+n_wt_sf = n_wt - 63                 
+# n_wt is the amount of turbines included in this figure there are 76 total turbines 
+# 0-63 are vinyards we need to isolate them to mask them so 67-12 = 63
+
+# Masking vinyard and costal
 wf1_mask = np.zeros(n_wt, dtype=bool)
 wf1_mask[:n_wt_sf] = True
 wf2_mask = ~(wf1_mask)  # the rest of turbines
 
-
+# printing which mask belongs to which wind farm 
 print(f"Turbines belonging to wind farm 1: {np.where(wf1_mask)[0]}") # verifiing that our calulations were correct 
 print(f"Turbines belonging to wind farm 2: {np.where(wf2_mask)[0]}")
 
-
+# putting the different wind farms in to two disktict list's 
 wt_groups = [np.arange(n_wt-63), np.arange(n_wt-63, n_wt)]
 
+
+# defining the constraints 
 constr_type = BoundaryType.POLYGON
 constraint_comp = MultiWFBoundaryConstraint(geometry = [boundary1, boundary2], wt_groups=wt_groups,
         boundtype=constr_type)
 
-# let's see how the boundaries look like
-fig = plt.figure()
-ax1 = fig.add_subplot(111)
-plt.plot(X_full, Y_full, "x", c="magenta")
-for i in range(n_wt):
-    plt.text(X_full[i] + 10, Y_full[i], str(i + 1), fontsize=12)
-plt.axis("equal")
-constraint_comp.get_comp(n_wt).plot(ax1)
-plt.show()
+# # let's see how the boundaries look like
+# fig = plt.figure()
+# ax1 = fig.add_subplot(111)
+# plt.plot(X_full, Y_full, "x", c="magenta")
+# for i in range(n_wt):
+#     plt.text(X_full[i] + 10, Y_full[i], str(i + 1), fontsize=12)
+# plt.axis("equal")
+# constraint_comp.get_comp(n_wt).plot(ax1)
+# plt.show()
 
 print('done')
 
-
-full_ws = np.arange(3, 25, 1) 
-wd = 270 ################# need to change to 90 or 270
+# Difining wind direction and speed 
+full_wd = np.arange(0, 360, 1)  # wind directions
+full_ws = np.arange(3, 25, 1)  # wind speeds
 freqs = site_1.local_wind(  # sector frequencies
     X_full,
     Y_full,
-    wd=wd,
+    wd=full_wd,
     ws=full_ws,
-    h = 150,
+    h = 150
 ).Sector_frequency_ilk[0, :, 0]
 # weibull parameters
-As = site_1.local_wind(X_full, Y_full, wd=270, ws=full_ws, h =150).Weibull_A_ilk[0, :, 0]
-ks = site_1.local_wind(X_full, Y_full, wd=270, ws=full_ws, h = 150).Weibull_k_ilk[0, :, 0]
+As = site_1.local_wind(X_full, Y_full, wd=full_wd, ws=full_ws, h=150).Weibull_A_ilk[0, :, 0]
+ks = site_1.local_wind(X_full, Y_full, wd=full_wd, ws=full_ws, h=150).Weibull_k_ilk[0, :, 0]
 N_SAMPLES = 25  # play with the number of samples
 
-
-def wind_resource_sample(fixed_wd=270):
-    # `As` and `ks` are already for wd=270, so we sample directly
-    ws = As * np.random.weibull(ks, size=N_SAMPLES)
+# def wind_resource_sample(fixed_wd=270):
+#     # `As` and `ks` are already for wd=270, so we sample directly
+#     ws = As * np.random.weibull(ks, size=N_SAMPLES)
     
-    # Create a wind direction array filled with the fixed direction
-    wd = np.full(N_SAMPLES, fixed_wd)
+#     # Create a wind direction array filled with the fixed direction
+#     wd = np.full(N_SAMPLES, fixed_wd)
 
+#     return wd, ws
+
+
+# Randomizing and runnning different wind directions and speeds 
+def wind_resource_sample():
+    idx = np.random.choice(np.arange(full_wd.size), N_SAMPLES, p=freqs / freqs.sum())
+    wd = full_wd[idx]
+    ws = As[idx] * np.random.weibull(ks[idx])
     return wd, ws
 
 
 
+# Partial equations calculations 
 def daep_func(x,y, full=False, **kwargs):
     daep = wf1_model.aep_gradients(gradient_method=autograd, wrt_arg=['x','y'], x=x,
-                                y=y)# + wf2_model.aep_gradients(gradient_method=autograd, wrt_arg=['x','y'], x=x,
-                                # y=y)
+                                y=y)
     return daep
 print('done')
 
@@ -219,14 +242,12 @@ slsqp_cost_comp = PyWakeAEPCostModelComponent(
     windFarmModel=wf1_model, n_wt=n_wt, grad_method=autograd
 )
 
-driver_type = "SDG"  # "SLSQP" or "SGD"
+
+# defining the driver
+driver_type = "SGD"  # "SLSQP" or "SGD"
 min_spacing = wt_vinyard.diameter() * 2
 
-constraint_comp  = MultiWFBoundaryConstraint(geometry=[boundary1,
-                                                       boundary2], 
-                                            wt_groups = wt_groups,
-                                            boundtype = constr_type)
-
+# If SLSQP define use these constraints and spacing  
 if driver_type == "SLSQP":
     constraints = [
         constraint_comp,
@@ -234,9 +255,11 @@ if driver_type == "SLSQP":
     ]
     driver = EasyScipyOptimizeDriver(
         optimizer="SLSQP",
-        maxiter=1000,
+        maxiter=10000,
     )
     cost_comp = slsqp_cost_comp
+
+# If SGD define use these constraints and spacing  
 elif driver_type == "SGD":
     constraints = DistanceConstraintAggregation(
         constraint_comp,
@@ -245,19 +268,24 @@ elif driver_type == "SGD":
         windTurbines=wt_vinyard,
     )
     driver = EasySGDDriver(
-        maxiter=1000,
+        maxiter=10000,
         speedupSGD=True,
         learning_rate=wt_vinyard.diameter() / 5,
         gamma_min_factor=0.1,
     )
     cost_comp = sgd_cost_comp
+
+# if unrecogizeed driver print Unkown driver
 else:
     raise ValueError(f"Unknown driver: {driver_type}")
 
-# wd = 270  we only care about this direction bec this direction is the only way that costal will impact vinyard
-# similarly when we do the vise versa of this challenge what effect dose vinyard have on costal the wd that will intrest us will be 90 degrees
-                                            
 
+# wd = 270  we only care about this direction bec this direction is the only 
+# way that costal will impact vinyard
+# similarly when we do the vise versa of this challenge what effect dose 
+# vinyard have on costal the wd that will intrest us will be 90 degrees
+                                            
+# defining problem for optimizer calling both farms to be optimized at the same time
 problem = TopFarmProblem(
     design_vars={"x": X_full, "y": Y_full},
     n_wt=n_wt,
@@ -267,9 +295,12 @@ problem = TopFarmProblem(
     plot_comp=XYPlotComp(),
 )
 
+# Initialting recorder, AEP cost, and optimization problem
 cost, state, recorder = problem.optimize(disp = True)
 
-recorder.save('optimization_Vinyard_respecting_Revolution')
+
+# Where to save the recording what the file should be names as 
+recorder.save('optimization_Vinyard_respecting_Revolution_2')
 
 print('done')
 

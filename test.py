@@ -21,6 +21,8 @@ from py_wake.validation.lillgrund import LillgrundSite
 from py_wake.wind_turbines.generic_wind_turbines import GenericWindTurbine
 from topfarm.cost_models.cost_model_wrappers import AEPCostModelComponent
 
+
+#########################################    sample code thuis is the exampke 
 wind_turbines = GenericWindTurbine("GenWT", 100.6, 2000, 150)
 site = LillgrundSite()
 wf_model = Bastankhah_PorteAgel_2014(
