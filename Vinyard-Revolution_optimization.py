@@ -25,84 +25,69 @@ import pickle
 from topfarm.cost_models.cost_model_wrappers import CostModelComponent
 from topfarm.constraint_components.boundary import XYBoundaryConstraint
 
-# Extracting coordinatates of wind terbines and boundarys
-with open(r'E:\Spring 2025\ENGIN 480\Project_5\The_Foreigners_Project_5\Vinyard_utm_boundary.pkl', 'rb') as f:
+# Extracting coordinatates of wind turbines and boundarys
+#RESPECT PATH DIRECTORIES
+#/Users/ompatel/Documents/Proj5_Engin480/The_Foreigners_Project_5/Vinyard_utm_boundary.pkl  'Om'
+#E:\Spring 2025\ENGIN 480\Project_5\The_Foreigners_Project_5\Vinyard_utm_boundary.pkl  'Kons'
+with open(r'/Users/ompatel/Documents/Proj5_Engin480/The_Foreigners_Project_5/Vinyard_utm_boundary.pkl', 'rb') as f:
     boundary1 = np.array(pickle.load(f))
 
-with open(r'E:\Spring 2025\ENGIN 480\Project_5\The_Foreigners_Project_5\Vinyard_utm_layout.pkl', 'rb') as f:
+#/Users/ompatel/Documents/Proj5_Engin480/The_Foreigners_Project_5/Vinyard_utm_layout.pkl  'Om'
+#E:\Spring 2025\ENGIN 480\Project_5\The_Foreigners_Project_5\Vinyard_utm_layout.pkl  'Kons'
+with open(r'/Users/ompatel/Documents/Proj5_Engin480/The_Foreigners_Project_5/Vinyard_utm_layout.pkl', 'rb') as f:
     xinit1,yinit1 = np.array(pickle.load(f))
 
-with open(r'E:\Spring 2025\ENGIN 480\Project_5\The_Foreigners_Project_5\Revolution_utm_boundary.pkl', 'rb') as g:
+#/Users/ompatel/Documents/Proj5_Engin480/The_Foreigners_Project_5/Revolution_utm_boundary.pkl 'Om'
+#E:\Spring 2025\ENGIN 480\Project_5\The_Foreigners_Project_5\Revolution_utm_boundary.pkl 'Kons'
+with open(r'/Users/ompatel/Documents/Proj5_Engin480/The_Foreigners_Project_5/Revolution_utm_boundary.pkl', 'rb') as g:
     boundary2 = np.array(pickle.load(g))
 
-with open(r'E:\Spring 2025\ENGIN 480\Project_5\The_Foreigners_Project_5\Revolution_utm_layout.pkl', 'rb') as g:
+#/Users/ompatel/Documents/Proj5_Engin480/The_Foreigners_Project_5/Revolution_utm_layout.pkl 'Om'
+#E:\Spring 2025\ENGIN 480\Project_5\The_Foreigners_Project_5\Revolution_utm_layout.pkl 'Kons'
+with open(r'/Users/ompatel/Documents/Proj5_Engin480/The_Foreigners_Project_5/Revolution_utm_layout.pkl', 'rb') as g:
     xinit2,yinit2 = np.array(pickle.load(g))
 
+#number of iterations for opt
 maxiter = 1000
 tol = 1e-6
 
-
-# Classes for type of wind terbines and wind data
-class SG_11200(GenericWindTurbine):
+##########################################################################################################################
+class SG_11200(GenericWindTurbine): #Revwind Turbine
     def __init__(self):
-        """
-        paramiters
-        __________
-        The turbulance intesity varies around 6-8%
-        """
-        # GenericWindTurbine.__init__(self, name = 'SG 11-200', diameter = 200,hub_height = 100,
-        #                                power_norm = 11000, turbulence_intensity = 0.07)
         GenericWindTurbine.__init__(self, name='SG 11-200', diameter=200, hub_height=100, 
-                                    power_norm=11000, turbulence_intensity=0.07)
-
+                                    power_norm=11000, turbulence_intensity=0.07) #intensity varies from 6-8%
 
 class RevolutionWindData(UniformWeibullSite):
     def __init__(self, ti= 0.07, shear=PowerShear(h_ref=100, alpha = 0.1)):
-        f = [6.5294, 7.4553, 6.2232, 5.8886, 4.7439, 4.5632, 
-             7.1771, 12.253, 13.8541, 10.3711, 11.5819, 9.3593]
-        a = [     9.93  ,  10.64  ,   9.87    , 8.85  ,   8.46 ,    8.26 ,
-                10.45  ,  11.75  ,  11.40   , 10.82 ,   11.95 ,   10.08]
-        k = [2.385  ,  1.822  ,  1.979 ,   1.842  ,  1.607  ,  1.486  ,
-               1.865  ,  2.256  ,  2.678  ,  2.170 ,   2.455  ,  2.506]
+        f = [6.5294, 7.4553, 6.2232, 5.8886, 4.7439, 4.5632, 7.1771, 12.253, 13.8541, 10.3711, 11.5819, 9.3593]
+        a = [9.93, 10.64, 9.87, 8.85, 8.46, 8.26, 10.45, 11.75, 11.40, 10.82, 11.95, 10.08]
+        k = [2.385, 1.822, 1.979, 1.842, 1.607, 1.486, 1.865, 2.256, 2.678, 2.170, 2.455, 2.506]
         UniformWeibullSite.__init__(self, np.array(f) / np.sum(f), a, k, ti=ti, shear=shear)
         # self.initial_position = np.array([site.x, site.y]).T
-        self.name = 'Reovolution South Fork Wind'
+        self.name = 'Revolution South Fork Wind'
 
-class Haliade_X(GenericWindTurbine):
+class Haliade_X(GenericWindTurbine): #Vineyard Turbine
     def __init__(self):
-        """
-        paramiters
-        __________
-        The turbulance intesity varies around 6-8%
-        """
         GenericWindTurbine.__init__(self, name='Haliade-X', diameter=220, hub_height=150, 
-                                    power_norm=13000, turbulence_intensity=0.07)
+                                    power_norm=13000, turbulence_intensity=0.07) #intensity varies from 6-8%
 
 class VinyardWind2(UniformWeibullSite):
-    def __init__(self, ti=0.07, shear=PowerShear(h_ref=150, alpha=0.1)):
-        f =[6.4452, 7.6731, 6.4753, 6.0399, 4.8786, 
-             4.5063, 7.318, 11.7828, 13.0872, 11.1976,
-            11.1351, 9.461]
-         # this list was multiplied by 0.01 using chatGpt
-        a = [10.26,    10.44,     9.52,     8.96,     9.58,
-             9.72,    11.48 ,   13.25,    12.46,    11.40,    12.35,    10.48]
-        k = [ 2.225,    1.697,    1.721,    1.689 ,   1.525  ,  1.498 ,
-                1.686,    2.143 ,   2.369   , 2.186    ,2.385   , 2.404]
+    def __init__(self, ti=0.07, shear=PowerShear(h_ref=150, alpha=0.1), wd = 270):
+        f =[6.4452, 7.6731, 6.4753, 6.0399, 4.8786, 4.5063, 7.318, 11.7828, 13.0872, 11.1976, 11.1351, 9.461]
+         # f parameter list was multiplied by 0.01 from gwc file using chatGpt
+        a = [10.26, 10.44, 9.52, 8.96, 9.58, 9.72, 11.48, 13.25, 12.46, 11.40, 12.35, 10.48]
+        k = [2.225, 1.697, 1.721, 1.689, 1.525, 1.498, 1.686, 2.143, 2.369, 2.186, 2.385, 2.404]
         UniformWeibullSite.__init__(self, np.array(f) / np.sum(f), a, k, ti=ti, shear=shear)
         # self.initial_position = np.array([site.x, site.y]).T
-        self.name = 'Vinyard Wind Farm'
-        
+        self.name = 'Vineyard Wind Farm'
+##########################################################################################################################
 
 # Calling and redifining the wind terbines and wind data
 wt_revolution = SG_11200()
-
 wt_vinyard = Haliade_X()
 
-
 site_2 = RevolutionWindData()
-
 site_1 = VinyardWind2()
-
 
 # calling the type fo model that we will be using for the 2 sites
 wf1_model = Bastankhah_PorteAgel_2014(
@@ -303,6 +288,3 @@ cost, state, recorder = problem.optimize(disp = True)
 recorder.save('optimization_Vinyard_respecting_Revolution_2')
 
 print('done')
-
-
-
